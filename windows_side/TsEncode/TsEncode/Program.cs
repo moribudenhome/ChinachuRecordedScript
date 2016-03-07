@@ -10,6 +10,7 @@ namespace TsEncode
 	{
 		static void Main( string[] args )
 		{
+			//PowerShellUtility.Execute( "ps/encode.ps1", new[] { "a", "b", "c" } );
 		}
 	}
 }
