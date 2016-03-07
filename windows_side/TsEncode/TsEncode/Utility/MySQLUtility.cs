@@ -34,16 +34,22 @@ public class MySQLUtility
 		}
 	}
 
-	public static void Query( Action<MySqlDataReader> row, string format, params object[] args )
+	public static bool Query( Action<MySqlDataReader> row, string format, params object[] args )
 	{
 		MySqlCommand cmd = new MySqlCommand( string.Format( format, args ), MySQLConnection );
-		MySqlDataReader reader = cmd.ExecuteReader();
-		while ( reader.Read() ) {
-			if ( row != null ) {
-				row( reader );
+		try {
+			MySqlDataReader reader = cmd.ExecuteReader();
+			while ( reader.Read() ) {
+				if ( row != null ) {
+					row( reader );
+				}
 			}
+			reader.Close();
+			return true;
+		} catch ( MySqlException e ) {
+			Console.WriteLine( e.Message );
+			return false;
 		}
-		reader.Close();
 	}
 
 	public static bool QueryDictionary( Action<Dictionary<string, object>> row, string format, params object[] args )
