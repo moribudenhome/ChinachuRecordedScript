@@ -4,6 +4,7 @@
 # 
 require "active_record"
 require 'json'
+require 'net/ping'
 
 # DB接続設定
 ActiveRecord::Base.establish_connection(
@@ -63,4 +64,11 @@ EncodeWaitings.create(
 	:program_data => program_json, 
 	:encode_state => EncodeWaitings.encode_states[:wait])
 
-# TODO 母艦が起動してるか確認して予約
+# 母艦PCの電源がついてなければWOLパケットを送っておく
+pinger = Net::Ping::External.new('192.168.1.2')
+if !pinger.ping?
+  system( "sudo ether-wake -b 74:D4:35:87:0A:03" )
+  system( "sudo ether-wake -b 74:D4:35:87:0A:03" )
+  system( "sudo ether-wake -b 74:D4:35:87:0A:03" )
+  WolRequests.create( :wol_state => WolRequests.wol_states[:requested]
+end
