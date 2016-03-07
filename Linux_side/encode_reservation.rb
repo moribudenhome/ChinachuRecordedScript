@@ -23,7 +23,7 @@ class EncodeWaitings < ActiveRecord::Base
 end
 
 class WolRequests < ActiveRecord::Base
-  enum wol_state: %i(requested success)
+  enum wol_state: %i(requested success pending)
 end
 
 # レコーダーのルートパス
