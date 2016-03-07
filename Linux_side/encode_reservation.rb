@@ -21,6 +21,10 @@ class EncodeWaitings < ActiveRecord::Base
   enum encode_state: %i(wait progress success failure)
 end
 
+class WolRequests < ActiveRecord::Base
+  enum wol_state: %i(requested success)
+end
+
 # レコーダーのルートパス
 ROOT_PATH = "/mnt/hdd/recorder/"
 # エンコード先基底ディレクトリ
