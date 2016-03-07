@@ -70,5 +70,5 @@ if !pinger.ping?
   system( "sudo ether-wake -b 74:D4:35:87:0A:03" )
   system( "sudo ether-wake -b 74:D4:35:87:0A:03" )
   system( "sudo ether-wake -b 74:D4:35:87:0A:03" )
-  WolRequests.create( :wol_state => WolRequests.wol_states[:requested]
+  WolRequests.create( :wol_state => WolRequests.wol_states[:requested] )
 end
