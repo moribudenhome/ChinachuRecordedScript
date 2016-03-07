@@ -38,6 +38,10 @@ def to_relative_path(path)
 	path_to.relative_path_from(path_from).to_s
 end
 
+# これ設定しとかないとタイムゾーンがずれまくる
+Time.zone_default =  Time.find_zone! 'Tokyo'
+ActiveRecord::Base.default_timezone = :local
+
 # tsの保存先 TODO 後でコマンドライン引数から持ってくる
 #src_path = "/mnt/hdd/recorder/raw/hoge.ts"
 src_path = ARGV[0]
