@@ -12,28 +12,19 @@ namespace TsEncode
 		{
 			if( !MySQLUtility.Open() ) { return; }
 
-			//model.EncodeWaitings.Get().UpdateEncodeWaitingList();
-			//model.EncodeWaitings.Get().UpdateEncodeState( 1, model.EncodeWaitings.ENCODE_STATE.wait );
+			var m = model.EncodeWaitings.Get();
+
+			// エンコード待ちリスト更新.
+			m.UpdateEncodeWaitingList();
+			// 逐次エンコード
+			m.Foreach( ( info ) => {
+				m.UpdateEncodeState( info.Id, model.EncodeWaitings.ENCODE_STATE.progress );
+				PowerShellUtility.Execute( "Ps/encode.ps1", new[] { "192.168.1.6", info.SrcPath, info.DstPath } );
+				// TODO エラー処理が無いのでエンコードへまっても成功になる！
+				m.UpdateEncodeState( info.Id, model.EncodeWaitings.ENCODE_STATE.success);
+			} );
 
 			MySQLUtility.Close();
-			//PowerShellUtility.Execute( "ps/encode.ps1", new[] { "a", "b", "c" } );
-			if ( MySQLUtility.Open() ) {
-				//MySQLUtility.Query( ( reader ) => {
-				//	string[] row = new string[ reader.FieldCount ];
-				//	for ( int i = 0; i < reader.FieldCount; i++ ) {
-				//		Console.WriteLine( reader.GetString( i ) );
-				//	}
-				//}, "SELECT src_path,dst_path,encode_state FROM encode_waitings where encode_state={0}", 0 );
-				//Console.WriteLine( "" );
-				//Console.WriteLine( "" );
-				//Console.WriteLine( "" );
-				//MySQLUtility.QueryDictionary( ( d ) => {
-				//	//foreach ( var e in dic ) {
-				//	//	Console.WriteLine( "key=" + e.Key + " value=" + e.Value );
-				//	//}
-				//	Console.WriteLine( (int)d[ "encode_state" ] );
-				//}, "SELECT src_path,dst_path,encode_state FROM encode_waitings where encode_state={0}", 0 );
-			}
 		}
 	}
 }

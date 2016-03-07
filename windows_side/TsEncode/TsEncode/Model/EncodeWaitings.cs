@@ -38,7 +38,7 @@ namespace model
 			public int Id { get; private set; }
 			public string SrcPath { get; private set; }
 			public string DstPath { get; private set; }
-			public ENCODE_STATE EncodeState { get; private set; }
+			public ENCODE_STATE EncodeState { get; set; }
 		}
 		List<EncodeWaitingInfo> infos = new List<EncodeWaitingInfo>();
 
@@ -56,7 +56,18 @@ namespace model
 		public void UpdateEncodeState( int id, ENCODE_STATE state ) 
 		{
 			MySQLUtility.Query( null, "UPDATE encode_waitings SET encode_state={0} WHERE id={1}", (int)state, id );
-			UpdateEncodeWaitingList();
+			var info = infos.Find( ( i ) => i.Id == id );
+			info.EncodeState = state;
+			//UpdateEncodeWaitingList();
+		}
+
+		public void Foreach( Action<EncodeWaitingInfo> action )
+		{
+			foreach( var info in infos ){
+				if ( action != null ) {
+					action( info );
+				}
+			}
 		}
 	}
 }
