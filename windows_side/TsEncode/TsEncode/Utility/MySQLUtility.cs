@@ -81,4 +81,25 @@ public class MySQLUtility
 			return false;
 		}
 	}
+
+	public static string BuildOrQueryHelper( string colname, List<string> values )
+	{
+		return BuildCombinationQueryHelper( colname, "OR", values );
+	}
+
+	public static string BuildAndQueryHelper( string colname, List<string> values )
+	{
+		return BuildCombinationQueryHelper( colname, "AND", values );
+	}
+
+	public static string BuildCombinationQueryHelper( string colname, string _operator, List<string> values )
+	{
+		string result = "";
+		if ( values == null || values.Count <= 0 ) { return result; }
+		result = colname + "=" + values[ 0 ];
+		for ( int i = 1; i < values.Count; i++ ) {
+			result += " " + _operator + " " + colname + "=" + values[ i ];
+		}
+		return result;
+	}
 }
