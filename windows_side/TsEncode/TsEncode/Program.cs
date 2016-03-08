@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -45,9 +46,19 @@ namespace TsEncode
 					ewm.Foreach( ( info ) => {
 						ewm.UpdateEncodeState( info.Id, model.EncodeWaitings.ENCODE_STATE.progress );
 						PowerShellUtility.Execute( "Ps/encode.ps1", new[] { "192.168.1.6", info.SrcPath, info.DstPath } );
-						// TODO エラー処理が無いのでエンコードへまっても成功になる！
-						ewm.UpdateEncodeState( info.Id, model.EncodeWaitings.ENCODE_STATE.success );
+						var srcfi = new FileInfo( @"\\192.168.1.6\share\" + info.SrcPath );
+						var dstfi = new FileInfo( @"\\192.168.1.6\share\" + info.DstPath );
+						// TODO ある程度ファイルサイズのサンプルが取れたら、サイズによってエンコード失敗してないかチェック
+						// ひとまず512k以下は失敗とする
+						if ( dstfi.Exists && 512000 < dstfi.Length ) {
+							Console.WriteLine( "エンコード成功" );
+							ewm.UpdateEncodeState( info.Id, model.EncodeWaitings.ENCODE_STATE.success );
+						} else {
+							Console.WriteLine( "エンコード失敗" );
+							ewm.UpdateEncodeState( info.Id, model.EncodeWaitings.ENCODE_STATE.failure );
+						}
 					} );
+					break;
 				}
 				Console.WriteLine( "全てのエンコード処理が完了しました。シャットダウンを実行します。" );
 				//Console.ReadKey();
