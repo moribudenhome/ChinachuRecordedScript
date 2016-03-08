@@ -21,6 +21,7 @@ public class MySQLUtility
 			MySQLConnection.Open();
 		} catch ( MySqlException e ) {
 			Console.WriteLine( e.Message );
+			MySQLConnection = null;
 			return false;
 		}
 		return true;

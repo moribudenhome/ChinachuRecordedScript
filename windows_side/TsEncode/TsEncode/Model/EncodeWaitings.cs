@@ -69,6 +69,11 @@ namespace model
 				}
 			}
 		}
+
+		public bool IsEmpty()
+		{
+			return infos.Count <= 0;
+		}
 	}
 }
 
