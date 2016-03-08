@@ -13,9 +13,17 @@ namespace TsEncode
 		static void Main( string[] args )
 		{
 			bool isShutdown = false;
+			bool isStartupMode = false;
+			foreach ( string arg in args ) {
+				if ( arg == "--startupmode" || arg == "-s" ) {
+					isStartupMode = true;
+				}
+			}
 			do {
-				Console.WriteLine( "システムが完全に起動するまで暫くお待ちください・・・" );
-				System.Threading.Thread.Sleep( 1 * 60 * 1000 );
+				if ( isStartupMode ) {
+					Console.WriteLine( "システムが完全に起動するまで暫くお待ちください・・・" );
+					System.Threading.Thread.Sleep( 1 * 60 * 1000 );
+				}
 
 				Console.WriteLine( "MySQLサーバーへの接続を開始します" );
 				if ( !MySQLUtility.Open() ) {
@@ -24,17 +32,19 @@ namespace TsEncode
 					break;
 				}
 
-				// WOLによって起動したか確認.
-				Console.WriteLine( "WOLでの起動か確認します。" );
-				var wrm = model.WolRequests.Get();
-				if ( !wrm.CheckWolRequested() ) {
-					// WOLリクエストが無ければエンコードはしない.
-					Console.WriteLine( "WOL要求が発見できませんでした" );
-					//Console.ReadKey();
-					break;
+				if ( isStartupMode ) {
+					// WOLによって起動したか確認.
+					Console.WriteLine( "WOLでの起動か確認します。" );
+					var wrm = model.WolRequests.Get();
+					if ( !wrm.CheckWolRequested() ) {
+						// WOLリクエストが無ければエンコードはしない.
+						Console.WriteLine( "WOL要求が発見できませんでした" );
+						//Console.ReadKey();
+						break;
+					}
+					isShutdown = true;
 				}
 
-				isShutdown = true;
 				var ewm = model.EncodeWaitings.Get();
 
 				Console.WriteLine( "エンコードを開始します" );
@@ -60,7 +70,7 @@ namespace TsEncode
 					} );
 					break;
 				}
-				Console.WriteLine( "全てのエンコード処理が完了しました。シャットダウンを実行します。" );
+				Console.WriteLine( "全てのエンコード処理が完了しました。" );
 				//Console.ReadKey();
 
 			} while ( false );
@@ -69,6 +79,7 @@ namespace TsEncode
 
 			if ( isShutdown ) {
 				try {
+					Console.WriteLine( "シャットダウンを実行します" );
 					ProcessStartInfo psi = new ProcessStartInfo();
 					psi.FileName = "shutdown.exe";
 					psi.Arguments = "-s -t 0";   // shutdown
