@@ -1,16 +1,17 @@
 # -*- encoding: utf-8 -*-
 # Chinachuで録画が終わった後エンコード待ちテーブルに叩き込むスクリプト
 # 
+$LOAD_PATH << __dir__
 require 'active_record'
 require 'yaml'
 require 'json'
 require 'net/ping'
 
-require './model/encode_waitings'
-require './model/wol_requests'
+require 'model/encode_waitings'
+require 'model/wol_requests'
 
 # 設定ファイル読み込み
-conf = YAML.load_file('yaml/configs.yml')
+conf = YAML.load_file(__dir__+'/yaml/configs.yml')
 # DB接続
 ActiveRecord::Base.establish_connection(conf['db'])
 
