@@ -57,5 +57,5 @@ EncodeWaitings.new().encode_reservation(
 # 母艦PCの電源がついてなければWOLパケットを送っておく
 pinger = Net::Ping::External.new(conf['encode_server']['ip_address'])
 if !pinger.ping?
-  EncodeWaitings.new().wol_request(conf['encode_server']['mac_address'])
+  WolRequests.new().wol_request(conf['encode_server']['mac_address'])
 end
