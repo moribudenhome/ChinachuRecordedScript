@@ -1,0 +1,26 @@
+# DBの設定
+db:
+    #adapter:    mysql2
+    #host:       localhost
+    #username:   root
+    #password:   
+    #database:   chinachu_manage
+
+    adapter:    mysql2
+    host:       localhost
+    username:   root
+    password:   
+    database:   dev_chinachu_manage
+
+path:
+    # レコーダーのルートパス
+    root:               /mnt/hdd/recorder/
+    # エンコード先ディレクトリ
+    encode_base_dir:    enc/
+
+encode_server:
+    # エンコードを行うPCのIP
+    ip_address:     192.168.1.2
+    # エンコードを行うPCのMACアドレス
+    mac_address:    74:D4:35:87:0A:03
+
