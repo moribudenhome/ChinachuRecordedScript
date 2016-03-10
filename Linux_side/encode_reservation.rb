@@ -5,6 +5,7 @@ $LOAD_PATH << __dir__
 require 'active_record'
 require 'yaml'
 require 'json'
+require 'time'
 require 'net/ping'
 
 require 'model/encode_waitings'
@@ -47,6 +48,8 @@ encode_path += ".mp4"
 unless FileTest.exist?(ROOT_PATH + encode_dir)
   FileUtils.mkdir_p(ROOT_PATH + encode_dir) 
   FileUtils.chmod(0777,ROOT_PATH + encode_dir)
+  # OSMCで時間ソートした時に下の方に出す為、空ディレクトリはタイムスタンプを遥か過去にしとく。
+  File::utime(Time.at(1), Time.at(1), ROOT_PATH + encode_dir)
 end
 
 EncodeWaitings.new().encode_reservation(
