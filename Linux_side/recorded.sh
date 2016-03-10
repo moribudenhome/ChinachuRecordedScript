@@ -8,7 +8,7 @@ passwd=bakuhatsu
 query=`curl -s --user ${user}:${passwd} http://192.168.1.6:10772/api/recorded.json`
 
 # logFile
-time=`date +%s`
+time=`date "+%Y%m%d_%H%M%S"`
 logExt=".log"
 
 # ログファイル保存ディレクト
