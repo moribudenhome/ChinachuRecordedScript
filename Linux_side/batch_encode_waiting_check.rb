@@ -15,10 +15,26 @@ ActiveRecord::Base.establish_connection(conf['db'])
 Time.zone_default =  Time.find_zone! 'Tokyo'
 ActiveRecord::Base.default_timezone = :local
 
-if EncodeWaitings.new().exists_encode_wait?
+encode_waitings = EncodeWaitings.new()
+wol_request = WolRequests.new()
+
+# エンコード待ちが溜まっていたらエンコードサーバーの電源を入れる
+if encode_waitings.exists_encode_wait?
   pinger = Net::Ping::External.new(conf['encode_server']['ip_address'])
   if !pinger.ping?
-    WolRequests.new().wol_request(conf['encode_server']['mac_address'])
+    wol_request.wol_request(conf['encode_server']['mac_address'])
   end
 end
 
+# エンコード中に強制的に中断されたと思われる予約が有るときもサーバーの電源いれる
+if encode_waitings.exists_encode_progress?
+  pinger = Net::Ping::External.new(conf['encode_server']['ip_address'])
+  if !pinger.ping?  
+    EncodeWaitings.where(
+      encode_state: EncodeWaitings.encode_states[:progress]).each {|rec|
+      p rec.id
+      rec.encode_state = EncodeWaitings.encode_states[:wait]
+    }
+    WolRequests.new().wol_request(conf['encode_server']['mac_address'])
+  end
+end
