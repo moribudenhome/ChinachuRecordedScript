@@ -1,22 +1,25 @@
 # DBの設定
 db:
-    #adapter:    mysql2
-    #host:       localhost
-    #username:   root
-    #password:   
-    #database:   chinachu_manage
-
     adapter:    mysql2
     host:       localhost
     username:   root
     password:   
-    database:   dev_chinachu_manage
-
+    #database:   dev_chinachu_manage
+    database:   chinachu_manage
 path:
     # レコーダーのルートパス
     root:               /mnt/hdd/recorder/
+    # 生ファイルディレクトリ
+    raw_base_dir:       raw/
     # エンコード先ディレクトリ
     encode_base_dir:    enc/
+    # ゴミ箱のディレクトリ
+    trash_base_dir:     ../trash/
+
+chinachu_server:
+    ip_address:     192.168.1.6
+    user:           akari
+    password:      bakuhatsu
 
 encode_server:
     # エンコードを行うPCのIP

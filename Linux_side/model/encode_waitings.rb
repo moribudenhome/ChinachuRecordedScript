@@ -1,5 +1,5 @@
 class EncodeWaitings < ActiveRecord::Base
-  enum encode_state: %i(wait progress success failure)
+  enum encode_state: %i(wait progress success failure clean_up)
 
   def exists_encode_wait?
     EncodeWaitings.exists?(:encode_state => EncodeWaitings.encode_states[:wait])
