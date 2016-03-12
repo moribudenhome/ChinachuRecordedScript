@@ -34,6 +34,7 @@ if encode_waitings.exists_encode_progress?
       encode_state: EncodeWaitings.encode_states[:progress]).each {|rec|
       p rec.id
       rec.encode_state = EncodeWaitings.encode_states[:wait]
+      rec.save
     }
     WolRequests.new().wol_request(conf['encode_server']['mac_address'])
   end
