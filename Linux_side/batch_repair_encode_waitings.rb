@@ -42,6 +42,11 @@ Net::HTTP.start('192.168.1.6', 10772) {|http|
 
       # 存在していない時はエンコード済みファイルの存在確認
       encode_dir = ENC_BASE_DIR + e["title"] + "/"
+      SeriesNames.all.map{ |name|
+        if e["title"].include?(name.name)
+          encode_dir = ENC_BASE_DIR + name.name  + "/"
+        end
+      }
       encode_path = encode_dir + e["title"]
       encode_path += "_" + e["subTitle"] unless e["subTitle"].blank?
       encode_path += "_" + e["episode"].to_s unless e["episode"].blank?

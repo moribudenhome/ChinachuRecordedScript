@@ -10,6 +10,7 @@ require 'net/ping'
 
 require 'model/encode_waitings'
 require 'model/wol_requests'
+require 'model/series_names'
 
 # 設定ファイル読み込み
 conf = YAML.load_file(__dir__+'/yaml/configs.yml')
@@ -39,6 +40,11 @@ src_path=path_to.relative_path_from(path_from).to_s
 
 # エンコード完了時の名前生成
 encode_dir = ENC_BASE_DIR + program["title"] + "/"
+SeriesNames.all.map{ |name|
+  if program["title"].include?(name.name)
+    encode_dir = ENC_BASE_DIR + name.name  + "/"
+  end
+}
 encode_path = encode_dir + program["title"]
 encode_path += "_" + program["subTitle"] unless program["subTitle"].blank?
 encode_path += "_" + program["episode"].to_s unless program["episode"].blank?
