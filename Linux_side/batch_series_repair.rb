@@ -1,9 +1,11 @@
 $LOAD_PATH << __dir__
 require 'active_record'
 require 'yaml'
+require "moji"
 
 require 'model/encode_waitings'
 require 'model/series_names'
+require 'model/syoboi'
 
 # 設定ファイル読み込み
 conf = YAML.load_file(__dir__+'/yaml/configs.yml')
@@ -15,183 +17,108 @@ Time.zone_default =  Time.find_zone! 'Tokyo'
 ActiveRecord::Base.default_timezone = :local
 
 encode_waitings = EncodeWaitings.new()
-
-# レコーダーのルートパス
-ROOT_PATH = conf['path']['root']
-# エンコード先基底ディレクトリ
-ENC_BASE_DIR = conf['path']['encode_base_dir']
-# 生ファイルディレクトリ
-RAW_PATH = ROOT_PATH + conf['path']['raw_base_dir']
+syoboi = Syoboi.new()
 
 i = 0
-#=begin
 EncodeWaitings.where(
     encode_state: EncodeWaitings.encode_states[:clean_up]
   ).map{ |rec|
+  p '--------------------------'
   series_name = ""
+  rename_title = ""
+
+  program_data = JSON.load(rec.program_data)
+
+  # レコーダーのルートパス
+  root_path = conf['path']['root']
+  # エンコード先基底ディレクトリ
+  enc_base_dir = File::split(File::dirname(rec.dst_path))[0] + '/'
+  p 'root_path='+root_path
+  p 'enc_base_dir='+enc_base_dir
+  #next
+  # シリーズ定義テーブルから該当のシリーズ名取得
   SeriesNames.all.map{ |name|
-    if File::dirname(rec.dst_path).include?(name.name)
-      series_name =  name.name
+    if program_data['title'].include?(name.name)
+      series_name =  Moji.han_to_zen(name.name)
+      rename_title = File::basename(rec.src_path,'.ts') + '.mp4'
     end
   }
-  # シリーズ定義テーブル内に存在しなければ処理しない
-  next if series_name.empty?
-  # すでにシリーズディレクトが指定されている
-  next if File::dirname(rec.dst_path) == ENC_BASE_DIR + series_name
-  p series_name
-  new_dst_path = ENC_BASE_DIR + series_name + "/" + File::basename(rec.dst_path)
-  new_encode_dir = ROOT_PATH + File::dirname(new_dst_path)
+
+  # しょぼいカレンダーからタイトル情報取得
+  # ※しょぼいの方に有ればそっちが優先
+  channel_name = program_data['channel']['type'] + program_data['channel']['channel']
+  title_info = syoboi.program_title(
+    channel_name,
+    program_data['start'].to_i/1000,
+    program_data['end'].to_i/1000
+  )
+  unless title_info.nil?
+    series_name = Moji.han_to_zen(title_info[:title])
+    rename_title = "#{series_name}_#{title_info[:count]}.mp4"
+  end
+
+  # ここまで来てデータもまともじゃなかったらいろいろあきらめて未分類へ
+  if series_name.empty?
+    series_name = 'unknown'
+  end
+  if rename_title.empty?
+    rename_title = File::basename(rec.src_path,'.ts') + '.mp4'
+  end
+
+  # 各種変更が必要かチェック
+  if 
+    File::dirname(rec.dst_path) == enc_base_dir + series_name &&
+    rename_title == File::basename(rec.dst_path)
+    p 'no touch : ' + rec.dst_path
+    p '--------------------------'
+    next
+  end
+
+  new_dst_path = enc_base_dir + series_name + "/" + rename_title
+  new_encode_dir = root_path + enc_base_dir + series_name
+
+  p 'new_encode_dir : '+ new_encode_dir
+  p rec.dst_path + ' -> ' + new_dst_path
 
   # 出力先が無ければつくっておく
   unless FileTest.exist?(new_encode_dir)
+    p 'create directory : ' + new_encode_dir
     FileUtils.mkdir_p(new_encode_dir) 
     FileUtils.chmod(0777,new_encode_dir)
     # OSMCで時間ソートした時に下の方に出す為、空ディレクトリはタイムスタンプを遥か過去にしとく。
     File::utime(Time.at(1), Time.at(1), new_encode_dir)
   end
-#=begin
-  if FileTest.exist?(ROOT_PATH + rec.dst_path)
-    next unless FileUtils.move(ROOT_PATH + rec.dst_path, ROOT_PATH + new_dst_path)
+  # 移動先が既に存在していないか
+  if FileTest.exist?(root_path + new_dst_path)
+    p 'file exist : '+ root_path + new_dst_path
+    p '--------------------------'
+    next
   end
-  symlink_name = File.basename(rec.src_path)
-  # p RAW_PATH+symlink_name
-  #if FileTest.exist?(RAW_PATH+symlink_name)
-    p RAW_PATH+symlink_name
-    FileUtils.remove(RAW_PATH+symlink_name)
-  #end
-  File.symlink(ROOT_PATH + new_dst_path, RAW_PATH+symlink_name)
-  #File::utime(Time.at(1), Time.at(1), ROOT_PATH + File::dirname(rec.dst_path))
+  # 移動元が存在するか
+  unless FileTest.exist?(root_path + rec.dst_path)
+    p 'not found src file: ' + root_path + rec.dst_path
+    next
+  end
+  p 'file　move : ' + root_path + rec.dst_path + ' ->  ' + root_path + new_dst_path
+  unless FileUtils.move(root_path + rec.dst_path, root_path + new_dst_path)
+    p 'file move Failure : '+ root_path + rec.dst_path + ' ->  ' + root_path + new_dst_path
+    p '--------------------------'
+    next
+  end
+  p '--------------------------'
+#  symlink_name = File.basename(rec.src_path)
+#  p RAW_PATH+symlink_name
+#  FileUtils.remove(RAW_PATH+symlink_name)
+#  File.symlink(root_path + new_dst_path, RAW_PATH+symlink_name)
 
-  begin
-    Dir.rmdir(ROOT_PATH+File::dirname(rec.dst_path))
-  rescue
-  end
+
+#  begin
+#    Dir.rmdir(root_path+File::dirname(rec.dst_path))
+#  rescue
+#  end
 
   rec.dst_path = new_dst_path
   rec.save!
-
-
-  #i = i + 1
-  #break if 5 < i
-  #p series_name
-  #p File::dirname(ROOT_PATH+e.dst_path)
-#=end
+#  break if 10 < i 
+#  i+=1
 }
-#p i
-=begin
-$LOAD_PATH << __dir__
-require 'diff/lcs'
-
-file_names = []
-Dir::entries("/mnt/hdd/recorder/enc").map { |name|
-  if name != "." && name != ".."
-    file_names.push(name)
-  end
-}
-
-#file_names = ["田中くんはいつもけだるげ",
-#              "田中くんはいつもけだるげ　「ギャップ少女越前さん」",
-#              "田中くんはいつもけだるげ　「田中くんの日常」",
-#              "田中くんはいつもけだるげ　「白石さんの秘密」"]
-
-
-file_names.sort!
-
-work_file_names = []
-(0..file_names.size-1).map{ |i|
-  str = ""
-  prev_size = (0 <= i - 1) ? file_names[i - 1].size : 0 
-  next_size = (i + 1 < file_names.size) ? file_names[i + 1].size : 0
-  is_all_match = true
-  (0..file_names[i].size - 1).map { |j|
-      is_hit = false
-      if prev_size > j && 0 <= i - 1 && file_names[i][j] == file_names[i - 1][j] 
-        is_hit = true
-      end
-      if next_size > j && i + 1 < file_names.size && file_names[i][j] == file_names[i + 1][j]
-        is_hit = true
-      end
-      if is_hit
-        str += file_names[i][j]
-      else
-        is_all_match = false
-        str.gsub!(/( |　|「|【|（|『)+$/, "")
-        if !work_file_names.include?(str)
-          work_file_names.push(str)
-          #p str
-        end
-        break
-      end
-  }
-  if is_all_match
-    str.gsub!(/( |　|「|【|（|『)+$/, "")
-    if !work_file_names.include?(str)
-      work_file_names.push(str)
-      #p str
-    end
-  end
-}
-file_names = work_file_names
-
-file_names.reverse_each do |name|
-  if name.size < 2
-    file_names.delete(name)
-  end
-end
-
-file_names.each do |name|
-  p name
-end
-
-
-
-seq1 = "ハピネスチャージプリキュア！_アクシアの真の姿！シャイニングメイクドレッサー！！_29.ts"
-seq2 = "ハピネスチャージプリキュア！_いおなの初恋！？イノセントフォーム発動！_32_[gr23608-de9].ts"
-
-lcs = Diff::LCS.LCS(seq1, seq2)
-diffs = Diff::LCS.diff(seq1, seq2)
-sdiff = Diff::LCS.sdiff(seq1, seq2)
-
-#p lcs
-#p diffs
-#p sdiff
-=end
-=begin
-  
-rescue Exception => e
-  
-end
-work = []
-sdiff.map do |elem|
-  if Array(elem)[0] == "="
-    work.push( [Array(Array(elem)[1]), Array(Array(elem)[2])] )
-    #p Array(Array(elem)[1])
-  end
-end
-work2 = []
-
-p work
-p ""
-p ""
-
-i = -1
-j = -1
-str = "";
-work.map do |elem|
-  if i == -1 || j == -1
-    i = elem[0][0]
-    j = elem[1][0]
-    str = elem[0][1]
-  elsif i + 1 == elem[0][0] && j + 1 == elem[1][0] && elem[0][1] == elem[1][1]
-    i+=1
-    j+=1
-    str += elem[0][1]
-  else
-    p str
-    i = elem[0][0]
-    j = elem[1][0]
-    str = elem[0][1]
-  end
-end
-p str
-=end
