@@ -23,6 +23,7 @@ ROOT_PATH = conf['path']['root']
 # エンコード先基底ディレクトリ
 ENC_BASE_DIR = conf['path']['encode_base_dir']
 
+encode_waitings = EncodeWaitings.new()
 
 # 録画済みリストを取得
 end_point = 'api/recorded.json';
@@ -40,17 +41,12 @@ Net::HTTP.start('192.168.1.6', 10772) {|http|
       src_path=path_to.relative_path_from(path_from).to_s
       next if EncodeWaitings.exists?(:src_path => src_path)
 
-      # 存在していない時はエンコード済みファイルの存在確認
-      encode_dir = ENC_BASE_DIR + e["title"] + "/"
-      SeriesNames.all.map{ |name|
-        if e["title"].include?(name.name)
-          encode_dir = ENC_BASE_DIR + name.name  + "/"
-        end
-      }
-      encode_path = encode_dir + e["title"]
-      encode_path += "_" + e["subTitle"] unless e["subTitle"].blank?
-      encode_path += "_" + e["episode"].to_s unless e["episode"].blank?
-      encode_path += ".mp4"
+      # エンコード完了時の名前生成
+      title_info = encode_waitings.encode_name(program_json)
+      series = title_info[:series]
+      title = title_info[:title]
+      encode_dir = ENC_BASE_DIR + series + "/"
+      encode_path = encode_dir + title + ".mp4"
       next if FileTest.exist?(ROOT_PATH + encode_path)
 
       # どうやらエンコード待ちリストにも無いしエンコードもされていないみたいなのでエンコード待ちに加える
